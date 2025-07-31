@@ -1,0 +1,12 @@
+# .gitignore
+# Node.js / React
+node_modules/
+dist/
+build/
+.env
+.env.local
+.DS_Store
+.vscode/
+.idea/
+*.log
+coverage/
