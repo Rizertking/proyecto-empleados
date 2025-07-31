@@ -1,6 +1,6 @@
 const express = require('express');
 const pool = require('../config/db');
-const { verifyToken } = require('../middleware/auth');
+const { verifyToken, checkRole  } = require('../middleware/auth');
 const router = express.Router();
 
 // Obtener empleados con paginación y búsqueda
@@ -28,19 +28,41 @@ router.get('/', verifyToken, async (req, res) => {
 });
 
 // Crear nuevo empleado
+
 router.post('/', verifyToken, async (req, res) => {
   try {
-    const { name, position } = req.body;
-    if (!name) return res.status(400).json({ message: 'El nombre es obligatorio' });
+    const { name, position, fecha_ingreso, salario } = req.body;
+
+    if (!name || !position || !fecha_ingreso || !salario) {
+      return res.status(400).json({ message: 'Todos los campos son obligatorios' });
+    }
 
     await pool.query(
-      'INSERT INTO employees (name, position) VALUES ($1, $2)',
-      [name, position]
+      'INSERT INTO employees (name, position, fecha_ingreso, salario) VALUES ($1, $2, $3, $4)',
+      [name, position, fecha_ingreso, salario]
     );
+
     res.status(201).json({ message: 'Empleado creado' });
   } catch (err) {
     console.error('🔥 Error al crear empleado:', err.message);
     res.status(500).json({ message: 'Error al crear empleado' });
+  }
+});
+
+// Eliminar empleado (solo admin)
+router.delete('/:id', verifyToken, checkRole('admin'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query('DELETE FROM employees WHERE id = $1', [id]);
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: 'Empleado no encontrado' });
+    }
+
+    res.json({ message: 'Empleado eliminado' });
+  } catch (err) {
+    console.error('🔥 Error al eliminar empleado:', err.message);
+    res.status(500).json({ message: 'Error al eliminar empleado' });
   }
 });
 
